@@ -14,6 +14,8 @@ try {
   # Now parse the packageParameters using good old regular expression
   # this argument parsing code snippet is largely copied from
   # https://github.com/chocolatey/choco/wiki/How-To-Parse-PackageParameters-Argument
+  $arguments = @{}
+  $packageParameters = $env:chocolateyPackageParameters
   if ($packageParameters) {
       $match_pattern = "\/(?<option>([a-zA-Z]+)):(?<value>([`"'])?([a-zA-Z0-9- _\\:\.]+)([`"'])?)|\/(?<option>([a-zA-Z]+))"
       $option_name = 'option'
