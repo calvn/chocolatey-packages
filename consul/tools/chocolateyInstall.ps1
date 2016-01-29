@@ -11,6 +11,35 @@ try {
   }
   $sourcePathUI = $(Join-Path $binariesPath "$($consulVersion)_web_ui.zip")
 
+  # Now parse the packageParameters using good old regular expression
+  # this argument parsing code snippet is largely copied from
+  # https://github.com/chocolatey/choco/wiki/How-To-Parse-PackageParameters-Argument
+  if ($packageParameters) {
+      $match_pattern = "\/(?<option>([a-zA-Z]+)):(?<value>([`"'])?([a-zA-Z0-9- _\\:\.]+)([`"'])?)|\/(?<option>([a-zA-Z]+))"
+      $option_name = 'option'
+      $value_name = 'value'
+
+      if ($packageParameters -match $match_pattern ){
+          $results = $packageParameters | Select-String $match_pattern -AllMatches
+          $results.matches | % {
+            $arguments.Add(
+                $_.Groups[$option_name].Value.Trim(),
+                $_.Groups[$value_name].Value.Trim())
+        }
+      }
+      else
+      {
+          Throw "Package Parameters were found but were invalid (REGEX Failure)"
+      }
+
+      if ($arguments.ContainsKey("server")) {
+          Write-Host "You want Consul to run as a server"
+          $runConsulAsServer = "-server"
+      }
+  } else {
+      Write-Debug "No Package Parameters Passed in"
+  }
+
   # Unzip and move Consul
   Get-ChocolateyUnzip  $sourcePath "$(Split-Path -parent $MyInvocation.MyCommand.Definition)"
   Get-ChocolateyUnzip  $sourcePathUI "$(Split-Path -parent $MyInvocation.MyCommand.Definition)"
@@ -53,7 +82,7 @@ try {
 
   Write-Host "Installing the consul service"
   # Install the service
-  & nssm install consul $(Join-Path $toolsPath "consul.exe") agent -config-dir=%PROGRAMDATA%\consul\config -data-dir=%PROGRAMDATA%\consul\data | Out-Null
+  & nssm install consul $(Join-Path $toolsPath "consul.exe") agent $runConsulAsServer -config-dir=%PROGRAMDATA%\consul\config -data-dir=%PROGRAMDATA%\consul\data | Out-Null
   & nssm set consul AppEnvironmentExtra GOMAXPROCS=$env:NUMBER_OF_PROCESSORS | Out-Null
   & nssm set consul ObjectName NetworkService | Out-Null
   & nssm set consul AppStdout "$env:PROGRAMDATA\consul\logs\consul-output.log" | Out-Null
