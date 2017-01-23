@@ -1,3 +1,9 @@
+$packageParameters = $env:chocolateyPackageParameters
+if (-not ($packageParameters)) {
+  $packageParameters = ""
+  Write-Debug "No Package Parameters Passed in"
+}
+
 try {
   $binariesPath = $(Join-Path (Split-Path -parent $MyInvocation.MyCommand.Definition) "..\binaries\")
   $toolsPath = (Split-Path -Parent $MyInvocation.MyCommand.Definition)
@@ -54,7 +60,7 @@ try {
 
   Write-Host "Installing the consul service"
   # Install the service
-  & $wrapperExe install consul $(Join-Path $toolsPath "consul.exe") agent -config-dir=%PROGRAMDATA%\consul\config -data-dir=%PROGRAMDATA%\consul\data | Out-Null
+  & $wrapperExe install consul $(Join-Path $toolsPath "consul.exe") agent -config-dir=%PROGRAMDATA%\consul\config -data-dir=%PROGRAMDATA%\consul\data $packageParameters | Out-Null
   & $wrapperExe set consul AppEnvironmentExtra GOMAXPROCS=$env:NUMBER_OF_PROCESSORS | Out-Null
   & $wrapperExe set consul ObjectName NetworkService | Out-Null
   & $wrapperExe set consul AppStdout "$env:PROGRAMDATA\consul\logs\consul-output.log" | Out-Null
